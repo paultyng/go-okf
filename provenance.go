@@ -10,12 +10,22 @@ import (
 
 // Source records a material a concept derives from (OKF v0.2 §5.1).
 type Source struct {
-	ID           string `yaml:"id,omitempty"`
-	Resource     string `yaml:"resource"`
-	Title        string `yaml:"title,omitempty"`
-	Author       string `yaml:"author,omitempty"`
-	UsageCount   int    `yaml:"usage_count,omitempty"`
-	LastModified *Date  `yaml:"last_modified,omitempty"`
+	ID           string       `yaml:"id,omitempty"`
+	Resource     string       `yaml:"resource"`
+	Title        string       `yaml:"title,omitempty"`
+	Author       string       `yaml:"author,omitempty"`
+	UsageCount   int          `yaml:"usage_count,omitempty"`
+	LastModified *Date        `yaml:"last_modified,omitempty"`
+	UsageWindow  *UsageWindow `yaml:"usage_window,omitempty"`
+}
+
+// UsageWindow frames a source's usage_count with a date range (OKF v0.2
+// §5.1). Written once as a sibling of `sources` (Concept.UsageWindow); a
+// single Source entry MAY carry its own UsageWindow to override the shared
+// one.
+type UsageWindow struct {
+	From *Date `yaml:"from,omitempty"`
+	To   *Date `yaml:"to,omitempty"`
 }
 
 // Actor identifies who or what performed an action (OKF v0.2 §7): an agent
@@ -138,6 +148,26 @@ func (c *Concept) TrustTier() string {
 		}
 	}
 	return "machine-confirmed"
+}
+
+// Lifecycle status values (OKF v0.2 §5.4). Status is a free string on
+// Concept — these constants name the spec's fixed vocabulary without
+// restricting parsing to it (permissive parsing never rejects an unknown
+// value).
+const (
+	StatusDraft      = "draft"
+	StatusStable     = "stable"
+	StatusDeprecated = "deprecated"
+)
+
+// LifecycleStatus returns the concept's lifecycle status (OKF v0.2 §5.4),
+// defaulting to StatusStable when Status is absent. An unknown Status value
+// passes through unchanged rather than being rejected or normalized.
+func (c *Concept) LifecycleStatus() string {
+	if c.Status == "" {
+		return StatusStable
+	}
+	return c.Status
 }
 
 // IsStale reports whether the concept is stale per `stale_after` (OKF v0.2

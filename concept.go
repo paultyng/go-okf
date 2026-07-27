@@ -35,11 +35,12 @@ type Concept struct {
 	Tags        []string
 
 	// Provenance, trust, and lifecycle families (OKF v0.2 §5). All optional.
-	Sources    []Source
-	Generated  *Actor // §5.2 — last content change; supersedes v0.1 `timestamp`.
-	Verified   []Actor
-	Status     string
-	StaleAfter *Date
+	Sources     []Source
+	UsageWindow *UsageWindow // §5.1 — shared window for Sources[].UsageCount; a Source may override it.
+	Generated   *Actor       // §5.2 — last content change; supersedes v0.1 `timestamp`.
+	Verified    []Actor
+	Status      string
+	StaleAfter  *Date
 
 	// Extra holds every other frontmatter key, preserved verbatim so
 	// round-tripping never silently drops producer-defined fields. Because
@@ -64,6 +65,7 @@ type frontmatterFields struct {
 	Resource    string       `yaml:"resource"`
 	Tags        []string     `yaml:"tags"`
 	Sources     []Source     `yaml:"sources"`
+	UsageWindow *UsageWindow `yaml:"usage_window"`
 	Generated   *Actor       `yaml:"generated"`
 	Verified    verifiedList `yaml:"verified"`
 	Status      string       `yaml:"status"`
@@ -79,17 +81,18 @@ type frontmatterFields struct {
 // (including the legacy `timestamp` fallback); everything else flows into
 // Extra.
 var knownFrontmatterKeys = map[string]bool{
-	"type":        true,
-	"title":       true,
-	"description": true,
-	"resource":    true,
-	"tags":        true,
-	"sources":     true,
-	"generated":   true,
-	"verified":    true,
-	"status":      true,
-	"stale_after": true,
-	"timestamp":   true,
+	"type":         true,
+	"title":        true,
+	"description":  true,
+	"resource":     true,
+	"tags":         true,
+	"sources":      true,
+	"usage_window": true,
+	"generated":    true,
+	"verified":     true,
+	"status":       true,
+	"stale_after":  true,
+	"timestamp":    true,
 }
 
 // splitFrontmatter splits raw document text into a frontmatter block (the
@@ -151,6 +154,7 @@ func Parse(data []byte) (*Concept, error) {
 	c.Resource = known.Resource
 	c.Tags = known.Tags
 	c.Sources = known.Sources
+	c.UsageWindow = known.UsageWindow
 	c.Generated = known.Generated
 	c.Verified = []Actor(known.Verified)
 	c.Status = known.Status
@@ -201,6 +205,9 @@ func (c *Concept) frontmatterMap() map[string]any {
 	}
 	if len(c.Sources) > 0 {
 		m["sources"] = c.Sources
+	}
+	if c.UsageWindow != nil {
+		m["usage_window"] = c.UsageWindow
 	}
 	if c.Generated != nil {
 		m["generated"] = c.Generated
