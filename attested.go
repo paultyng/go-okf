@@ -81,7 +81,7 @@ func (c *Concept) AsAttestedComputation() (*AttestedComputation, bool) {
 	return ac, true
 }
 
-// Validate implements Validator. `runtime` is the only "REQUIRED for this
+// Validate implements [Validator]. `runtime` is the only "REQUIRED for this
 // type" clause in the OKF v0.2 spec (§10.2).
 func (ac *AttestedComputation) Validate() []Violation {
 	if strings.TrimSpace(ac.Runtime) == "" {

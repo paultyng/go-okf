@@ -3,7 +3,7 @@ package okf
 import "strings"
 
 // Violation is one conformance finding (OKF v0.2 §11). ConceptID is filled
-// in by Bundle.Conformance when a Validator implementation leaves it
+// in by [Bundle.Conformance] when a [Validator] implementation leaves it
 // empty, so individual Validate() implementations don't need bundle
 // context.
 type Violation struct {
@@ -14,7 +14,7 @@ type Violation struct {
 
 // Conformance checks every concept in the bundle against OKF v0.2 §11: the
 // base rule (every concept has a non-empty `type`) plus any rules
-// contributed by a registered type's Validator implementation. An empty
+// contributed by a registered type's [Validator] implementation. An empty
 // return slice means the bundle is conformant. Conformance is permissive
 // per spec: unknown types, unknown keys, broken links, and missing
 // optional fields are never violations.

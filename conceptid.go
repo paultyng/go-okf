@@ -15,7 +15,7 @@ type ConceptID string
 
 // ParseConceptID strictly validates s as a concept id: every `/`-separated
 // segment must match [A-Za-z0-9_][A-Za-z0-9_.\-]*. Use this to validate an
-// id supplied by a caller (e.g. a link target); use ConceptIDFromPath for
+// id supplied by a caller (e.g. a link target); use [ConceptIDFromPath] for
 // permissively deriving an id from whatever is actually on disk.
 func ParseConceptID(s string) (ConceptID, error) {
 	parts := nonEmptySegments(s)

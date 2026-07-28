@@ -85,7 +85,7 @@ func parseLogItem(raw string) LogEntry {
 // Insert adds entry to the log: finding or creating its date section
 // (newest-first order among sections) and prepending the entry within
 // that section (newest-first within a day). The date is supplied by the
-// caller — this package never calls time.Now.
+// caller — this package never calls [time.Now].
 func (l *Log) Insert(entry LogEntry) {
 	for i := range l.Sections {
 		if l.Sections[i].Date.Time.Equal(entry.Date.Time) {

@@ -1,14 +1,3 @@
-// Package okf implements the Open Knowledge Format (OKF) v0.2: a directory
-// of markdown files with YAML frontmatter representing a knowledge bundle.
-//
-// The package is pure OKF: it has zero dependencies on any specific
-// consumer's domain types. Extensibility is provided via a type registry
-// (see Register, As, Typed) rather than a closed interface hierarchy.
-//
-// Core has no concrete filesystem coupling beyond stdlib io/fs.FS for
-// reads; writes are caller-owned (Marshal / Bytes return bytes, callers
-// persist them). Core never calls time.Now: dates are passed in by the
-// caller for determinism.
 package okf
 
 import (
@@ -25,7 +14,7 @@ const frontmatterDelim = "---"
 // markdown file with YAML frontmatter. It is a concrete struct rather than
 // an interface, since a concept is data (frontmatter + verbatim body) and
 // round-trip safety demands a concrete carrier. Extensible typing is
-// layered on top via As / Register / Typed (see registry.go).
+// layered on top via [As] / [Register] / [Concept.Typed] (see registry.go).
 type Concept struct {
 	// Core frontmatter (OKF v0.2 §4.1).
 	Type        string // REQUIRED — the type discriminator.
@@ -36,7 +25,7 @@ type Concept struct {
 
 	// Provenance, trust, and lifecycle families (OKF v0.2 §5). All optional.
 	Sources     []Source
-	UsageWindow *UsageWindow // §5.1 — shared window for Sources[].UsageCount; a Source may override it.
+	UsageWindow *UsageWindow // §5.1 — shared window for Sources[].UsageCount; a [Source] may override it.
 	Generated   *Actor       // §5.2 — last content change; supersedes v0.1 `timestamp`.
 	Verified    []Actor
 	Status      string
@@ -123,7 +112,7 @@ func splitFrontmatter(text string) (fm []byte, body string, hasFM bool, err erro
 	return []byte(fmText), b, true, nil
 }
 
-// Parse parses a concept document's raw bytes into a Concept. It tolerates
+// Parse parses a concept document's raw bytes into a [Concept]. It tolerates
 // documents with no frontmatter (frontmatter left zero-valued, all content
 // treated as body) but returns an error for an unterminated frontmatter
 // block or frontmatter that isn't a YAML mapping.
@@ -224,7 +213,7 @@ func (c *Concept) frontmatterMap() map[string]any {
 	return m
 }
 
-// Marshal serializes a Concept back into a full document: frontmatter
+// Marshal serializes a [Concept] back into a full document: frontmatter
 // delimited by `---` lines followed by the verbatim body. Marshal is pure
 // (no I/O); callers persist the returned bytes (see the filesystem
 // abstraction notes in the package doc).

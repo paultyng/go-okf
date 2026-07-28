@@ -70,7 +70,7 @@ func extractLinks(source []byte) []Link {
 }
 
 // Citations returns the legacy v0.1 `# Citations` body list, if present.
-// v0.2 producers should prefer `sources` frontmatter (Concept.Sources);
+// v0.2 producers should prefer `sources` frontmatter ([Concept].Sources);
 // this is a fallback for reading older documents (§13.1).
 func (c *Concept) Citations() []Citation {
 	return extractCitations([]byte(c.Body))

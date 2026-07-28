@@ -118,7 +118,7 @@ func (idx *Index) Bytes() []byte {
 }
 
 // IndexBuildEntry is one concept to include when synthesizing an
-// index.md section list via BuildIndexSections.
+// index.md section list via [BuildIndexSections].
 type IndexBuildEntry struct {
 	Type        string
 	Title       string
@@ -158,7 +158,7 @@ func BuildIndexSections(entries []IndexBuildEntry) []IndexSection {
 }
 
 // IndexChildSummary is the (title, description) pair passed to a
-// Synthesizer describing one child (concept or subdirectory) of a
+// [Synthesizer] describing one child (concept or subdirectory) of a
 // directory being indexed.
 type IndexChildSummary struct {
 	Title       string

@@ -8,7 +8,7 @@ import (
 )
 
 // Validator is the behavioral opt-in for types that contribute custom
-// conformance rules (see Bundle.Conformance). It is deliberately not part
+// conformance rules (see [Bundle.Conformance]). It is deliberately not part
 // of the registry contract: a registered type only needs to implement it
 // when it has extra rules to enforce.
 type Validator interface {
@@ -54,7 +54,7 @@ func (c *Concept) Typed() (any, bool) {
 // Extra — every key) into T via yaml struct tags, so a caller-known type
 // sees both the OKF core fields (title, description, ...) and its own
 // custom keys. This is the compile-time path: it needs no registry entry.
-// For decoding that As can't express, supply a custom func to Register
+// For decoding that As can't express, supply a custom func to [Register]
 // instead.
 func As[T any](c *Concept) (*T, error) {
 	b, err := yaml.Marshal(c.frontmatterMap())

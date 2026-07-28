@@ -15,7 +15,7 @@ type Bundle struct {
 	logs     map[string]*Log
 }
 
-// Load reads a bundle from any fs.FS (os.DirFS, embed.FS, fstest.MapFS,
+// Load reads a bundle from any [fs.FS] (os.DirFS, embed.FS, fstest.MapFS,
 // ...). It is permissive per OKF v0.2 §11: a concept file with unparsable
 // frontmatter is skipped rather than failing the whole load, unknown types
 // are accepted, and broken links are never checked here (link resolution
@@ -64,7 +64,7 @@ func Load(fsys fs.FS) (*Bundle, error) {
 	return b, nil
 }
 
-// FromConcepts builds a Bundle directly from an in-memory concept map,
+// FromConcepts builds a [Bundle] directly from an in-memory concept map,
 // keyed by concept id string, without any filesystem involved.
 func FromConcepts(concepts map[string]*Concept) *Bundle {
 	b := &Bundle{concepts: map[ConceptID]*Concept{}, indexes: map[string]*Index{}, logs: map[string]*Log{}}

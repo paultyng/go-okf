@@ -29,14 +29,14 @@ func (k SourceKind) String() string {
 	}
 }
 
-// Origin records one site where an ExternalLink was discovered.
+// Origin records one site where an [ExternalLink] was discovered.
 type Origin struct {
 	ConceptID string
 	Source    SourceKind
 }
 
 // ExternalLink is one external URL referenced anywhere in a bundle,
-// deduplicated by CanonicalURL, with every discovery site recorded.
+// deduplicated by [CanonicalURL], with every discovery site recorded.
 type ExternalLink struct {
 	URL     string // verbatim as first authored — never canonicalized.
 	Origins []Origin
@@ -62,7 +62,7 @@ const noRank = 1<<31 - 1
 // ExternalLinks merges every external reference across the bundle —
 // frontmatter `resource:`, `sources[].resource`, legacy body `# Citations`,
 // and inline body links — into one deduplicated list keyed by
-// CanonicalURL. Metadata precedence, richest wins: resource/sources >
+// [CanonicalURL]. Metadata precedence, richest wins: resource/sources >
 // citation > inline link. Origins collect every discovery site.
 func (b *Bundle) ExternalLinks() []ExternalLink {
 	order := []string{}
