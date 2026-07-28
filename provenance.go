@@ -37,6 +37,30 @@ type Actor struct {
 	At time.Time `yaml:"at"`
 }
 
+// UnmarshalYAML implements [yaml.Unmarshaler]. `by` decodes strictly (a
+// malformed `by` still errors, matching the default struct-decode behavior
+// this replaces). `at` is tolerant, mirroring [Date]: a syntactically-valid
+// document with an unparseable or wrong-kind `at` scalar must never fail
+// [Concept] parsing (permissive parsing, OKF v0.2 §11) — a bad `at` is
+// treated as absent (zero [Actor.At]) rather than an error.
+func (a *Actor) UnmarshalYAML(node *yaml.Node) error {
+	var raw struct {
+		By string    `yaml:"by"`
+		At yaml.Node `yaml:"at"`
+	}
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	a.By = raw.By
+	a.At = time.Time{}
+	if raw.At.Kind == yaml.ScalarNode {
+		if t, err := time.Parse(time.RFC3339, raw.At.Value); err == nil {
+			a.At = t
+		}
+	}
+	return nil
+}
+
 // verifiedList decodes the `verified` frontmatter key, which may be either
 // a single bare `{ by, at }` mapping or a YAML sequence of such mappings
 // (OKF v0.2 §5.2). Consumers MUST treat a bare mapping as a one-element

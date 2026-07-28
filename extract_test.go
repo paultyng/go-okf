@@ -2,7 +2,11 @@ package okf
 
 import (
 	"reflect"
+	"strings"
 	"testing"
+	"time"
+
+	gast "github.com/yuin/goldmark/ast"
 )
 
 func TestIsExternalTarget(t *testing.T) {
@@ -71,6 +75,93 @@ func TestExtractCitationsAbsentWhenNoSection(t *testing.T) {
 	}
 }
 
+// Regression tests for nodeText's replacement of the deprecated,
+// type-specific ast.Node.Text: AutoLink, String, and RawHTML store their
+// text in private fields rather than child *ast.Text nodes, so a nodeText
+// that only recurses through FirstChild silently drops their content.
+
+func TestExtractLinksAutoLinkAsLinkText(t *testing.T) {
+	c := &Concept{Body: "[<https://inner>](https://target)\n"}
+	links := c.Links()
+	if len(links) != 1 {
+		t.Fatalf("len(Links()) = %d, want 1: %+v", len(links), links)
+	}
+	if links[0].Text != "https://inner" {
+		t.Errorf("Text = %q, want the autolink's label preserved as the link text", links[0].Text)
+	}
+	if links[0].Target != "https://target" {
+		t.Errorf("Target = %q, want %q", links[0].Target, "https://target")
+	}
+}
+
+func TestExtractCitationsBareAutoLinkURL(t *testing.T) {
+	c := &Concept{Body: "# Citations\n- <https://example.com/auto>\n"}
+	citations := c.Citations()
+	if len(citations) != 1 {
+		t.Fatalf("len(Citations()) = %d, want 1: %+v", len(citations), citations)
+	}
+	if citations[0].URL != "https://example.com/auto" {
+		t.Errorf("URL = %q, want the autolink URL preserved", citations[0].URL)
+	}
+}
+
+func TestExtractCitationsRawHTMLInLinkTextPreserved(t *testing.T) {
+	c := &Concept{Body: "# Citations\n- [Raw <br> html](https://example.com/x)\n"}
+	citations := c.Citations()
+	if len(citations) != 1 {
+		t.Fatalf("len(Citations()) = %d, want 1: %+v", len(citations), citations)
+	}
+	if citations[0].Title != "Raw <br> html" {
+		t.Errorf("Title = %q, want the raw HTML tag preserved verbatim in the link text", citations[0].Title)
+	}
+}
+
+func TestNodeTextPreservesRawHTMLInHeading(t *testing.T) {
+	doc, source := parseBody(extractMarkdown, "# Raw <br> html\n")
+	var heading *gast.Heading
+	_ = gast.Walk(doc, func(n gast.Node, entering bool) (gast.WalkStatus, error) {
+		if !entering {
+			return gast.WalkContinue, nil
+		}
+		if h, ok := n.(*gast.Heading); ok {
+			heading = h
+			return gast.WalkStop, nil
+		}
+		return gast.WalkContinue, nil
+	})
+	if heading == nil {
+		t.Fatal("expected to find a heading node")
+	}
+	if got := string(nodeText(heading, source)); got != "Raw <br> html" {
+		t.Errorf("nodeText(heading) = %q, want %q", got, "Raw <br> html")
+	}
+}
+
+// TestExtractCitationsFootnoteMarkerParsedLiterally locks in Fix 2:
+// Citations/Links must parse with the footnote-free config, matching
+// git-show HEAD (pre-refactor) go-okf. This body is an adversarial edge
+// case (a "[^1]" marker nested inside a citation's link text, with a
+// same-named "[^1]: def" line elsewhere) chosen because it's one of the
+// few inputs where the footnote-vs-footnote-free parser choice visibly
+// changes Citations() output: without the Footnote extension, "[^1]: def"
+// is read as an ordinary CommonMark link-reference-definition, so the
+// nested "[^1]" resolves as its own link (a pre-existing, if obscure,
+// go-okf behavior we must not regress) — Title/URL below are exactly what
+// HEAD's original two-parser code produces for this body, confirmed by
+// running it against git-show HEAD:extract.go directly. The single-parser
+// refactor this fix undoes instead treated "[^1]" as a footnote reference,
+// producing {Title: URL:Revenue recognition} for the same body.
+func TestExtractCitationsFootnoteMarkerParsedLiterally(t *testing.T) {
+	c := &Concept{Body: "# Citations\n- [Revenue recognition[^1]](https://example.com/rev)\n\n[^1]: def\n"}
+	citations := c.Citations()
+	if len(citations) != 1 {
+		t.Fatalf("len(Citations()) = %d, want 1: %+v", len(citations), citations)
+	}
+	if citations[0].Title != "^1" || citations[0].URL != "def" {
+		t.Errorf("Citations()[0] = %+v, want {Title:^1 URL:def} (footnote-free parse, matching pre-refactor HEAD)", citations[0])
+	}
+}
+
 func TestFootnoteSourceIDs(t *testing.T) {
 	c := &Concept{
 		Sources: []Source{
@@ -92,6 +183,35 @@ func TestFootnoteSourceIDsUnmatchedIgnored(t *testing.T) {
 	}
 	if got := c.FootnoteSourceIDs(); len(got) != 0 {
 		t.Errorf("FootnoteSourceIDs() = %v, want none", got)
+	}
+}
+
+// TestMaxParseBytesBoundsAdversarialBody guards against goldmark's
+// superlinear parse cost on adversarially nested markdown (see
+// MaxParseBytes's doc comment). Deeply nested blockquote markers are a
+// known trigger: a 300KB body of nothing but ">" characters measurably
+// fails to parse within a 5s budget with no cap in place. With a small
+// cap, extraction on a much larger (5MB) adversarial body must still
+// complete quickly, because only the first MaxParseBytes bytes are ever
+// handed to the parser.
+func TestMaxParseBytesBoundsAdversarialBody(t *testing.T) {
+	orig := MaxParseBytes
+	MaxParseBytes = 4096
+	defer func() { MaxParseBytes = orig }()
+
+	body := strings.Repeat(">", 5_000_000) + " x"
+	c := &Concept{Body: body}
+
+	done := make(chan []Link, 1)
+	go func() { done <- c.Links() }()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Links() did not return within the time budget; MaxParseBytes cap did not bound the parse")
+	}
+
+	if c.Body != body {
+		t.Error("Concept.Body was mutated by extraction, want the cap to only bound the parser's input, never the stored body")
 	}
 }
 

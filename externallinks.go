@@ -101,12 +101,21 @@ func (b *Bundle) ExternalLinks() []ExternalLink {
 	for _, id := range b.sortedIDs() {
 		c := b.concepts[ConceptID(id)]
 
+		// Parse the body once with the footnote-free config and reuse the
+		// AST for both citations and inline links: `[^id]` markers inside
+		// link/citation text must stay literal, matching the pre-footnote
+		// extraction behavior those two share. A second, footnote-enabled
+		// parse is needed only for footnote-cited source IDs below, since
+		// that's the one signal that requires the Footnote extension.
+		doc, source := parseBody(extractMarkdown, c.Body)
+		footnoteDoc, _ := parseBody(footnoteMarkdown, c.Body)
+
 		// A source cited by a body footnote (`[^id]` matching sources[].id,
 		// §4.2 per-claim attribution) is a richer provenance signal than a
 		// merely-listed, uncited source: its metadata takes precedence over
 		// an uncited source's for the same URL.
 		footnoted := map[string]bool{}
-		for _, fid := range c.FootnoteSourceIDs() {
+		for _, fid := range footnoteSourceIDs(c.Sources, footnoteDoc) {
 			footnoted[fid] = true
 		}
 
@@ -123,10 +132,10 @@ func (b *Bundle) ExternalLinks() []ExternalLink {
 		if c.Resource != "" {
 			upsert(id, c.Resource, c.Type, c.Title, SourceResource, 0)
 		}
-		for _, cit := range c.Citations() {
+		for _, cit := range extractCitations(doc, source) {
 			upsert(id, cit.URL, "", cit.Title, SourceCitation, 1)
 		}
-		for _, l := range c.Links() {
+		for _, l := range extractLinks(doc, source) {
 			if l.External {
 				upsert(id, l.Target, "", l.Text, SourceInlineLink, 2)
 			}

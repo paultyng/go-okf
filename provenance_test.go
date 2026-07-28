@@ -250,6 +250,34 @@ func TestVerifiedListUnmarshalYAMLSequenceDecodeErrorPropagates(t *testing.T) {
 	}
 }
 
+func TestActorGeneratedAtMalformedIsIgnoredPermissively(t *testing.T) {
+	src := []byte("---\ntype: X\ngenerated:\n  at: not-a-date\n  by: human:x\n---\n\nbody\n")
+	c, err := Parse(src)
+	if err != nil {
+		t.Fatalf("Parse: %v, want a malformed `generated.at` to be tolerated rather than rejected", err)
+	}
+	if c.Generated == nil || c.Generated.By != "human:x" {
+		t.Fatalf("Generated = %+v, want By preserved", c.Generated)
+	}
+	if !c.Generated.At.IsZero() {
+		t.Errorf("Generated.At = %v, want zero for an unparseable `at`", c.Generated.At)
+	}
+}
+
+func TestActorVerifiedAtMalformedIsIgnoredPermissively(t *testing.T) {
+	src := []byte("---\ntype: X\nverified:\n  at: not-a-date\n  by: human:x\n---\n\nbody\n")
+	c, err := Parse(src)
+	if err != nil {
+		t.Fatalf("Parse: %v, want a malformed `verified[].at` to be tolerated rather than rejected", err)
+	}
+	if len(c.Verified) != 1 || c.Verified[0].By != "human:x" {
+		t.Fatalf("Verified = %+v, want By preserved", c.Verified)
+	}
+	if !c.Verified[0].At.IsZero() {
+		t.Errorf("Verified[0].At = %v, want zero for an unparseable `at`", c.Verified[0].At)
+	}
+}
+
 func TestParseLegacyTimestamp(t *testing.T) {
 	tests := []struct {
 		name string

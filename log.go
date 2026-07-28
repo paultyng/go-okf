@@ -78,7 +78,8 @@ func parseLogItem(raw string) LogEntry {
 		entry.Kind = strings.TrimSpace(m[1])
 		entry.Text = strings.TrimSpace(m[2])
 	}
-	entry.Links = extractLinks([]byte(entry.Text))
+	doc, source := parseBody(extractMarkdown, entry.Text)
+	entry.Links = extractLinks(doc, source)
 	return entry
 }
 

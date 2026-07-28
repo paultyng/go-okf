@@ -5,7 +5,6 @@ import (
 
 	"github.com/yuin/goldmark"
 	gast "github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/text"
 )
 
 // AttestedComputationType is the concept `type` value with normative
@@ -97,10 +96,11 @@ var computationFenceMarkdown = goldmark.New()
 
 // extractComputationFence returns the literal contents of the first fenced
 // or indented code block under a `# Computation` heading in body, or "" if
-// none is found (OKF v0.2 §4.2, §10.3).
+// none is found (OKF v0.2 §4.2, §10.3). Parsing is bounded by
+// [MaxParseBytes] (see its doc comment) since body is untrusted producer
+// input.
 func extractComputationFence(body string) string {
-	source := []byte(body)
-	doc := computationFenceMarkdown.Parser().Parse(text.NewReader(source))
+	doc, source := parseBody(computationFenceMarkdown, body)
 
 	var result string
 	inSection := false
@@ -117,7 +117,7 @@ func extractComputationFence(body string) string {
 				}
 				return gast.WalkSkipChildren, nil
 			}
-			if strings.EqualFold(strings.TrimSpace(string(h.Text(source))), "Computation") {
+			if strings.EqualFold(strings.TrimSpace(string(nodeText(h, source))), "Computation") {
 				inSection = true
 				sectionLevel = h.Level
 			}
@@ -126,10 +126,10 @@ func extractComputationFence(body string) string {
 		if inSection {
 			switch cb := n.(type) {
 			case *gast.FencedCodeBlock:
-				result = string(cb.Text(source))
+				result = string(cb.Lines().Value(source))
 				return gast.WalkStop, nil
 			case *gast.CodeBlock:
-				result = string(cb.Text(source))
+				result = string(cb.Lines().Value(source))
 				return gast.WalkStop, nil
 			}
 		}
