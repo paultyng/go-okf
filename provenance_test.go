@@ -114,7 +114,7 @@ body
 		t.Errorf("Sources[0].UsageWindow.To = %q", got)
 	}
 
-	out := Marshal(c)
+	out := c.Bytes()
 	reparsed, err := Parse(out)
 	if err != nil {
 		t.Fatalf("re-Parse: %v", err)
@@ -336,7 +336,7 @@ func TestDateYAMLRoundTrip(t *testing.T) {
 	if c.StaleAfter == nil || c.StaleAfter.Time.Format("2006-01-02") != "2026-09-23" {
 		t.Fatalf("StaleAfter = %v", c.StaleAfter)
 	}
-	out := Marshal(c)
+	out := c.Bytes()
 	reparsed, err := Parse(out)
 	if err != nil {
 		t.Fatalf("re-Parse: %v", err)

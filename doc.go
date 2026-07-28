@@ -7,15 +7,15 @@
 // ([Register], [As], [Concept.Typed]) rather than a closed interface hierarchy;
 // [AttestedComputation] is the one built-in typed concept.
 //
-// Parse a single concept with [Parse] and write it back with [Marshal];
+// Parse a single concept with [Parse] and write it back with [Concept.Bytes];
 // load a whole bundle from an [io/fs.FS] with [Load]. The reserved
 // index.md and log.md files are handled by [Index] and [Log].
 // [Bundle.ExternalLinks] derives a bundle's outbound resources, and
 // [Bundle.Conformance] checks OKF conformance.
 //
 // Core has no concrete filesystem coupling beyond stdlib [io/fs.FS] for
-// reads; writes are caller-owned ([Marshal] and the reserved-file Bytes
-// methods return bytes, callers persist them). Core never calls
+// reads; writes are caller-owned (the Bytes methods on [Concept], [Index],
+// and [Log] return bytes, callers persist them). Core never calls
 // [time.Now]: dates are passed in by the caller for determinism.
 //
 // [OKF spec]: https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf

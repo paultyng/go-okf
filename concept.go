@@ -213,11 +213,12 @@ func (c *Concept) frontmatterMap() map[string]any {
 	return m
 }
 
-// Marshal serializes a [Concept] back into a full document: frontmatter
-// delimited by `---` lines followed by the verbatim body. Marshal is pure
+// Bytes serializes the [Concept] back into a full document: frontmatter
+// delimited by `---` lines followed by the verbatim body. Bytes is pure
 // (no I/O); callers persist the returned bytes (see the filesystem
-// abstraction notes in the package doc).
-func Marshal(c *Concept) []byte {
+// abstraction notes in the package doc). It mirrors [Index.Bytes] and
+// [Log.Bytes].
+func (c *Concept) Bytes() []byte {
 	fmBytes, err := yaml.Marshal(c.frontmatterMap())
 	if err != nil {
 		// yaml.Marshal over these known-safe types practically never

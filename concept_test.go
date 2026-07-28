@@ -36,7 +36,7 @@ Body text.
 		t.Errorf("Body = %q", c.Body)
 	}
 
-	out := Marshal(c)
+	out := c.Bytes()
 	reparsed, err := Parse(out)
 	if err != nil {
 		t.Fatalf("re-Parse: %v", err)
@@ -52,7 +52,7 @@ func TestConceptRoundTripMinimal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
-	out := Marshal(c)
+	out := c.Bytes()
 	reparsed, err := Parse(out)
 	if err != nil {
 		t.Fatalf("re-Parse: %v", err)

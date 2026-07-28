@@ -41,7 +41,7 @@ func TestOracleRoundtripPreservesFrontmatterAndBody(t *testing.T) {
 		t.Errorf("Body = %q, want it to start with \"# Sample\"", c.Body)
 	}
 
-	reparsed, err := Parse(Marshal(c))
+	reparsed, err := Parse(c.Bytes())
 	if err != nil {
 		t.Fatalf("re-Parse: %v", err)
 	}

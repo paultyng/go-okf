@@ -40,9 +40,9 @@ One row per completed order.
 	// [sales orders revenue]
 }
 
-// ExampleMarshal round-trips a concept through Parse and Marshal, showing
+// ExampleConcept_Bytes round-trips a concept through Parse and Bytes, showing
 // that an unrecognized frontmatter key (Extra) and the body survive intact.
-func ExampleMarshal() {
+func ExampleConcept_Bytes() {
 	doc := []byte(`---
 type: Playbook
 title: Incident response
@@ -60,7 +60,7 @@ owner: team:sre
 	}
 	fmt.Println(c.Extra["owner"])
 
-	out := okf.Marshal(c)
+	out := c.Bytes()
 	reparsed, err := okf.Parse(out)
 	if err != nil {
 		panic(err)
