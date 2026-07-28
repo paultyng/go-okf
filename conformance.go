@@ -32,8 +32,16 @@ func (b *Bundle) Conformance() []Violation {
 			continue
 		}
 
-		v, ok := c.Typed()
-		if !ok {
+		v, registered, err := decodeRegistered(c)
+		if !registered {
+			continue
+		}
+		if err != nil {
+			out = append(out, Violation{
+				ConceptID: id,
+				Rule:      "decode",
+				Detail:    err.Error(),
+			})
 			continue
 		}
 		validator, ok := v.(Validator)

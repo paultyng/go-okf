@@ -37,17 +37,25 @@ func Register(kind string, decode func(*Concept) (any, error)) {
 // the registered decoder returns an error — callers that need the error
 // should call the registered decode func (or As[T]) directly.
 func (c *Concept) Typed() (any, bool) {
+	v, registered, err := decodeRegistered(c)
+	return v, registered && err == nil
+}
+
+// decodeRegistered dispatches to the decoder registered for c.Type, if any,
+// reporting registration status and decode error separately so callers
+// (namely [Bundle.Conformance]) can distinguish "no decoder registered for
+// this type" (permissively skipped) from "registered but decode failed"
+// (a conformance violation) — both of which collapse to (nil, false) in
+// [Concept.Typed].
+func decodeRegistered(c *Concept) (v any, registered bool, err error) {
 	registryMu.RLock()
 	decode, ok := registry[c.Type]
 	registryMu.RUnlock()
 	if !ok {
-		return nil, false
+		return nil, false, nil
 	}
-	v, err := decode(c)
-	if err != nil {
-		return nil, false
-	}
-	return v, true
+	v, err = decode(c)
+	return v, true, err
 }
 
 // As decodes the concept's merged full frontmatter (core fields plus
