@@ -67,7 +67,7 @@ func TestParseDateTolerantOfDatetimePrefix(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseDate: %v", err)
 	}
-	if d.Time.Format("2006-01-02") != "2026-09-23" {
+	if d.Format("2006-01-02") != "2026-09-23" {
 		t.Errorf("ParseDate = %v", d.Time)
 	}
 
@@ -97,20 +97,20 @@ body
 	if c.UsageWindow == nil {
 		t.Fatal("expected top-level UsageWindow to be populated")
 	}
-	if got := c.UsageWindow.From.Time.Format("2006-01-02"); got != "2026-06-01" {
+	if got := c.UsageWindow.From.Format("2006-01-02"); got != "2026-06-01" {
 		t.Errorf("UsageWindow.From = %q", got)
 	}
-	if got := c.UsageWindow.To.Time.Format("2006-01-02"); got != "2026-06-30" {
+	if got := c.UsageWindow.To.Format("2006-01-02"); got != "2026-06-30" {
 		t.Errorf("UsageWindow.To = %q", got)
 	}
 
 	if len(c.Sources) != 1 || c.Sources[0].UsageWindow == nil {
 		t.Fatalf("expected Sources[0].UsageWindow to be populated, got %+v", c.Sources)
 	}
-	if got := c.Sources[0].UsageWindow.From.Time.Format("2006-01-02"); got != "2026-05-01" {
+	if got := c.Sources[0].UsageWindow.From.Format("2006-01-02"); got != "2026-05-01" {
 		t.Errorf("Sources[0].UsageWindow.From = %q", got)
 	}
-	if got := c.Sources[0].UsageWindow.To.Time.Format("2006-01-02"); got != "2026-05-31" {
+	if got := c.Sources[0].UsageWindow.To.Format("2006-01-02"); got != "2026-05-31" {
 		t.Errorf("Sources[0].UsageWindow.To = %q", got)
 	}
 
@@ -122,10 +122,10 @@ body
 	if !reflect.DeepEqual(reparsed, c) {
 		t.Errorf("round-trip mismatch:\n got=%+v\nwant=%+v", reparsed, c)
 	}
-	if reparsed.UsageWindow.From.Time.Format("2006-01-02") != "2026-06-01" {
+	if reparsed.UsageWindow.From.Format("2006-01-02") != "2026-06-01" {
 		t.Errorf("round-tripped top-level UsageWindow.From = %v", reparsed.UsageWindow.From)
 	}
-	if reparsed.Sources[0].UsageWindow.From.Time.Format("2006-01-02") != "2026-05-01" {
+	if reparsed.Sources[0].UsageWindow.From.Format("2006-01-02") != "2026-05-01" {
 		t.Errorf("round-tripped Sources[0].UsageWindow.From = %v", reparsed.Sources[0].UsageWindow.From)
 	}
 }
@@ -175,7 +175,7 @@ func TestDateUnmarshalYAMLPermissiveBadValues(t *testing.T) {
 			if c.StaleAfter == nil {
 				t.Fatal("expected StaleAfter to be allocated (present key), just zero-valued")
 			}
-			if !c.StaleAfter.Time.IsZero() {
+			if !c.StaleAfter.IsZero() {
 				t.Errorf("StaleAfter = %v, want the zero value for a permissively-tolerated bad date", c.StaleAfter.Time)
 			}
 		})
@@ -197,10 +197,10 @@ body
 	if c.UsageWindow == nil {
 		t.Fatal("expected UsageWindow to be populated")
 	}
-	if c.UsageWindow.From == nil || !c.UsageWindow.From.Time.IsZero() {
+	if c.UsageWindow.From == nil || !c.UsageWindow.From.IsZero() {
 		t.Errorf("UsageWindow.From = %+v, want a zero-valued Date for a mapping where a scalar is expected", c.UsageWindow.From)
 	}
-	if c.UsageWindow.To == nil || c.UsageWindow.To.Time.Format("2006-01-02") != "2026-01-01" {
+	if c.UsageWindow.To == nil || c.UsageWindow.To.Format("2006-01-02") != "2026-01-01" {
 		t.Errorf("UsageWindow.To = %+v, want the sibling scalar to still parse", c.UsageWindow.To)
 	}
 }
@@ -333,7 +333,7 @@ func TestDateYAMLRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
-	if c.StaleAfter == nil || c.StaleAfter.Time.Format("2006-01-02") != "2026-09-23" {
+	if c.StaleAfter == nil || c.StaleAfter.Format("2006-01-02") != "2026-09-23" {
 		t.Fatalf("StaleAfter = %v", c.StaleAfter)
 	}
 	out := c.Bytes()
@@ -341,7 +341,7 @@ func TestDateYAMLRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("re-Parse: %v", err)
 	}
-	if reparsed.StaleAfter.Time.Format("2006-01-02") != "2026-09-23" {
+	if reparsed.StaleAfter.Format("2006-01-02") != "2026-09-23" {
 		t.Errorf("round-tripped StaleAfter = %v", reparsed.StaleAfter)
 	}
 }

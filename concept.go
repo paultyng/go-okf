@@ -3,6 +3,7 @@ package okf
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -176,9 +177,7 @@ func Parse(data []byte) (*Concept, error) {
 // (`type` only) round-trips to a minimal frontmatter block.
 func (c *Concept) frontmatterMap() map[string]any {
 	m := make(map[string]any, len(c.Extra)+8)
-	for k, v := range c.Extra {
-		m[k] = v
-	}
+	maps.Copy(m, c.Extra)
 	m["type"] = c.Type
 	if c.Title != "" {
 		m["title"] = c.Title

@@ -119,7 +119,7 @@ func ParseDate(s string) (Date, error) {
 
 // MarshalYAML implements [yaml.Marshaler], emitting YYYY-MM-DD.
 func (d Date) MarshalYAML() (any, error) {
-	return d.Time.Format("2006-01-02"), nil
+	return d.Format("2006-01-02"), nil
 }
 
 // UnmarshalYAML implements [yaml.Unmarshaler]. It reads the node's literal
@@ -131,7 +131,7 @@ func (d Date) MarshalYAML() (any, error) {
 // (wrong kind, or a scalar like "not-a-date") must never fail [Concept]
 // parsing — permissive parsing (OKF v0.2 §11) treats a bad optional date
 // as absent rather than an error. Callers distinguish "absent" via
-// [Date].Time.IsZero() (see [Concept.IsStale]).
+// [Date].IsZero() (see [Concept.IsStale]).
 func (d *Date) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.ScalarNode {
 		*d = Date{}
@@ -200,8 +200,8 @@ func (c *Concept) LifecycleStatus() string {
 // was unparseable at parse time (a zero [Date]), matching the reference
 // implementation's is_stale.
 func (c *Concept) IsStale(today Date) bool {
-	if c.StaleAfter == nil || c.StaleAfter.Time.IsZero() {
+	if c.StaleAfter == nil || c.StaleAfter.IsZero() {
 		return false
 	}
-	return !today.Time.Before(c.StaleAfter.Time)
+	return !today.Before(c.StaleAfter.Time)
 }

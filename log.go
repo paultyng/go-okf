@@ -44,7 +44,7 @@ func ParseLog(data []byte) (*Log, error) {
 	log := &Log{}
 	var cur *LogSection
 
-	for _, line := range strings.Split(string(data), "\n") {
+	for line := range strings.SplitSeq(string(data), "\n") {
 		line = strings.TrimRight(line, " \t\r")
 		if line == "" {
 			continue
@@ -89,14 +89,14 @@ func parseLogItem(raw string) LogEntry {
 // caller — this package never calls [time.Now].
 func (l *Log) Insert(entry LogEntry) {
 	for i := range l.Sections {
-		if l.Sections[i].Date.Time.Equal(entry.Date.Time) {
+		if l.Sections[i].Date.Equal(entry.Date.Time) {
 			l.Sections[i].Entries = append([]LogEntry{entry}, l.Sections[i].Entries...)
 			return
 		}
 	}
 
 	idx := 0
-	for idx < len(l.Sections) && l.Sections[idx].Date.Time.After(entry.Date.Time) {
+	for idx < len(l.Sections) && l.Sections[idx].Date.After(entry.Date.Time) {
 		idx++
 	}
 	l.Sections = append(l.Sections, LogSection{})
@@ -114,7 +114,7 @@ func (l *Log) Bytes() []byte {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# %s\n\n", heading)
 	for i, sec := range l.Sections {
-		fmt.Fprintf(&b, "## %s\n", sec.Date.Time.Format("2006-01-02"))
+		fmt.Fprintf(&b, "## %s\n", sec.Date.Format("2006-01-02"))
 		for _, e := range sec.Entries {
 			if e.Kind != "" {
 				fmt.Fprintf(&b, "* **%s**: %s\n", e.Kind, e.Text)

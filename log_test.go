@@ -23,7 +23,7 @@ func TestLogParse(t *testing.T) {
 	if len(lg.Sections) != 2 {
 		t.Fatalf("len(Sections) = %d: %+v", len(lg.Sections), lg.Sections)
 	}
-	if lg.Sections[0].Date.Time.Format("2006-01-02") != "2026-05-22" {
+	if lg.Sections[0].Date.Format("2006-01-02") != "2026-05-22" {
 		t.Errorf("Sections[0].Date = %v", lg.Sections[0].Date)
 	}
 	if len(lg.Sections[0].Entries) != 2 {
@@ -76,7 +76,7 @@ func TestLogInsertNewDateNewestFirst(t *testing.T) {
 	if len(lg.Sections) != 3 {
 		t.Fatalf("len(Sections) = %d, want 3", len(lg.Sections))
 	}
-	if lg.Sections[0].Date.Time.Format("2006-01-02") != "2026-05-25" {
+	if lg.Sections[0].Date.Format("2006-01-02") != "2026-05-25" {
 		t.Errorf("newest date should sort first, got %v", lg.Sections[0].Date)
 	}
 }
@@ -111,7 +111,7 @@ func TestLogInsertOldestDateAppendsSection(t *testing.T) {
 	if len(lg.Sections) != 3 {
 		t.Fatalf("len(Sections) = %d, want 3", len(lg.Sections))
 	}
-	if lg.Sections[2].Date.Time.Format("2006-01-02") != "2026-01-01" {
+	if lg.Sections[2].Date.Format("2006-01-02") != "2026-01-01" {
 		t.Errorf("oldest date should sort last, got %v", lg.Sections[2].Date)
 	}
 }

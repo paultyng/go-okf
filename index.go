@@ -69,7 +69,7 @@ func parseIndexSections(body string) []IndexSection {
 	var sections []IndexSection
 	var cur *IndexSection
 
-	for _, line := range strings.Split(body, "\n") {
+	for line := range strings.SplitSeq(body, "\n") {
 		line = strings.TrimRight(line, " \t\r")
 		if line == "" {
 			continue
