@@ -14,6 +14,8 @@ const (
 	SourceInlineLink
 )
 
+// String returns the lowercase channel name: "resource", "sources",
+// "citation", or "inline-link" (or "unknown" for an out-of-range value).
 func (k SourceKind) String() string {
 	switch k {
 	case SourceResource:

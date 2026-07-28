@@ -179,6 +179,43 @@ func ExampleRegister() {
 	// Incident response team:sre
 }
 
+// ExampleAs decodes a concept's merged frontmatter (core fields plus custom
+// keys) straight into a caller-defined struct via yaml tags — the
+// compile-time path that needs no registry entry.
+func ExampleAs() {
+	c, err := okf.Parse([]byte("---\ntype: Playbook\ntitle: Incident response\nowner: team:sre\n---\n\nbody\n"))
+	if err != nil {
+		panic(err)
+	}
+
+	pb, err := okf.As[Playbook](c)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(pb.Title, pb.Owner)
+	// Output:
+	// Incident response team:sre
+}
+
+// ExampleBundle_RegenerateIndexes synthesizes an index.md for a bundle,
+// grouping concepts by type and sorting entries by title. Passing a nil
+// [okf.Synthesizer] is fine here: no subdirectory summaries are needed.
+func ExampleBundle_RegenerateIndexes() {
+	b := okf.FromConcepts(map[string]*okf.Concept{
+		"orders":    {Type: "BigQuery Table", Title: "Orders"},
+		"customers": {Type: "BigQuery Table", Title: "Customers"},
+	})
+
+	indexes := b.RegenerateIndexes(nil)
+	fmt.Print(string(indexes[""]))
+	// Output:
+	// # BigQuery Table
+	//
+	// * [Customers](customers.md)
+	// * [Orders](orders.md)
+}
+
 // ExampleConcept_AsAttestedComputation decodes an Attested Computation
 // concept (OKF v0.2 §10.2): a sanctioned, re-runnable way to produce a
 // value, plus the executor and attester that check it.
