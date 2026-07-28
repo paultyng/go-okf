@@ -23,6 +23,17 @@ func TestAs(t *testing.T) {
 	}
 }
 
+func TestAsErrorsOnIncompatibleTarget(t *testing.T) {
+	src := []byte("---\ntype: Review\ntitle: Q3 review\n---\n\nbody\n")
+	c, err := Parse(src)
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if _, err := As[int](c); err == nil {
+		t.Error("expected As[int] to error when the frontmatter mapping can't decode into a scalar int")
+	}
+}
+
 func TestRegistryDispatch(t *testing.T) {
 	Register("TestReview", func(c *Concept) (any, error) {
 		return As[testReview](c)

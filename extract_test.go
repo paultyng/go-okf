@@ -5,6 +5,28 @@ import (
 	"testing"
 )
 
+func TestIsExternalTarget(t *testing.T) {
+	tests := []struct {
+		name   string
+		target string
+		want   bool
+	}{
+		{"bundle-relative absolute path", "/x.md", false},
+		{"bundle-relative dotted path", "./x.md", false},
+		{"absolute https URL", "https://example.com/x.md", true},
+		{"protocol-relative (no scheme, treated as internal)", "//host/x", false},
+		{"mailto scheme", "mailto:someone@example.com", true},
+		{"invalid percent-encoding (url.Parse error)", "%zz", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isExternalTarget(tt.target); got != tt.want {
+				t.Errorf("isExternalTarget(%q) = %v, want %v", tt.target, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestExtractLinks(t *testing.T) {
 	c := &Concept{Body: "See [customers](/tables/customers.md) and [the docs](https://example.com/docs) and [relative](./other.md).\n"}
 	links := c.Links()
@@ -86,5 +108,23 @@ func TestBundleAggregatesAcrossConcepts(t *testing.T) {
 	}
 	if got := b.Links(); len(got) != 1 {
 		t.Errorf("Links() = %v", got)
+	}
+}
+
+func TestBundleCitationsAggregatesAcrossConcepts(t *testing.T) {
+	b := FromConcepts(map[string]*Concept{
+		"b": {Type: "X", Body: "# Citations\n- https://example.com/b1\n"},
+		"a": {Type: "X", Body: "# Citations\n- https://example.com/a1\n- https://example.com/a2\n"},
+	})
+	got := b.Citations()
+	if len(got) != 3 {
+		t.Fatalf("Citations() = %+v, want 3 entries across both concepts", got)
+	}
+	// sortedIDs visits "a" before "b", so a's citations come first.
+	if got[0].URL != "https://example.com/a1" || got[1].URL != "https://example.com/a2" {
+		t.Errorf("Citations()[0:2] = %+v, want a's citations in id order", got[:2])
+	}
+	if got[2].URL != "https://example.com/b1" {
+		t.Errorf("Citations()[2] = %+v, want b's citation", got[2])
 	}
 }

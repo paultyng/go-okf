@@ -2,6 +2,24 @@ package okf
 
 import "testing"
 
+func TestSourceKindString(t *testing.T) {
+	tests := []struct {
+		kind SourceKind
+		want string
+	}{
+		{SourceResource, "resource"},
+		{SourceProvenance, "sources"},
+		{SourceCitation, "citation"},
+		{SourceInlineLink, "inline-link"},
+		{SourceKind(99), "unknown"},
+	}
+	for _, tt := range tests {
+		if got := tt.kind.String(); got != tt.want {
+			t.Errorf("SourceKind(%d).String() = %q, want %q", tt.kind, got, tt.want)
+		}
+	}
+}
+
 func TestExternalLinksPrecedence(t *testing.T) {
 	b := FromConcepts(map[string]*Concept{
 		"revenue": {

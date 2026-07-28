@@ -3,6 +3,7 @@ package okf
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestTrustTier(t *testing.T) {
@@ -151,6 +152,150 @@ func TestLifecycleStatus(t *testing.T) {
 				t.Errorf("Status mutated: got %q, want %q", c.Status, tt.status)
 			}
 		})
+	}
+}
+
+func TestDateUnmarshalYAMLPermissiveBadValues(t *testing.T) {
+	tests := []struct {
+		name string
+		fm   string
+	}{
+		{"unparseable string", "stale_after: not-a-date\n"},
+		{"invalid calendar date", "stale_after: 2026-13-45\n"},
+		{"empty string scalar", "stale_after: \"\"\n"},
+		{"wrong kind (mapping where a scalar is expected)", "stale_after: { not: a-date }\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			src := []byte("---\ntype: X\n" + tt.fm + "---\n\nbody\n")
+			c, err := Parse(src)
+			if err != nil {
+				t.Fatalf("Parse: %v, want a bad optional date to be tolerated rather than rejected", err)
+			}
+			if c.StaleAfter == nil {
+				t.Fatal("expected StaleAfter to be allocated (present key), just zero-valued")
+			}
+			if !c.StaleAfter.Time.IsZero() {
+				t.Errorf("StaleAfter = %v, want the zero value for a permissively-tolerated bad date", c.StaleAfter.Time)
+			}
+		})
+	}
+}
+
+func TestUsageWindowDateFieldPermissiveWrongKind(t *testing.T) {
+	src := []byte(`---
+type: X
+usage_window: { from: { nested: mapping }, to: 2026-01-01 }
+---
+
+body
+`)
+	c, err := Parse(src)
+	if err != nil {
+		t.Fatalf("Parse: %v, want a bad usage_window.from to be tolerated rather than rejected", err)
+	}
+	if c.UsageWindow == nil {
+		t.Fatal("expected UsageWindow to be populated")
+	}
+	if c.UsageWindow.From == nil || !c.UsageWindow.From.Time.IsZero() {
+		t.Errorf("UsageWindow.From = %+v, want a zero-valued Date for a mapping where a scalar is expected", c.UsageWindow.From)
+	}
+	if c.UsageWindow.To == nil || c.UsageWindow.To.Time.Format("2006-01-02") != "2026-01-01" {
+		t.Errorf("UsageWindow.To = %+v, want the sibling scalar to still parse", c.UsageWindow.To)
+	}
+}
+
+func TestVerifiedListUnmarshalYAMLSequence(t *testing.T) {
+	src := []byte(`---
+type: X
+verified:
+  - by: process:finance-nightly
+    at: 2026-06-01T00:00:00Z
+  - by: human:ahormati
+    at: 2026-06-02T00:00:00Z
+---
+
+body
+`)
+	c, err := Parse(src)
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if len(c.Verified) != 2 {
+		t.Fatalf("Verified = %+v, want a 2-element list from a YAML sequence", c.Verified)
+	}
+	if c.Verified[0].By != "process:finance-nightly" || c.Verified[1].By != "human:ahormati" {
+		t.Errorf("Verified = %+v", c.Verified)
+	}
+}
+
+func TestVerifiedListUnmarshalYAMLWrongKindErrors(t *testing.T) {
+	src := []byte("---\ntype: X\nverified: not-a-mapping-or-sequence\n---\n\nbody\n")
+	if _, err := Parse(src); err == nil {
+		t.Error("expected Parse to error when `verified` is neither a mapping nor a sequence")
+	}
+}
+
+func TestVerifiedListUnmarshalYAMLMappingDecodeErrorPropagates(t *testing.T) {
+	src := []byte("---\ntype: X\nverified: { by: [1, 2], at: 2026-01-01T00:00:00Z }\n---\n\nbody\n")
+	if _, err := Parse(src); err == nil {
+		t.Error("expected Parse to error when the bare `verified` mapping doesn't decode into Actor")
+	}
+}
+
+func TestVerifiedListUnmarshalYAMLSequenceDecodeErrorPropagates(t *testing.T) {
+	src := []byte("---\ntype: X\nverified:\n  - by: [1, 2]\n    at: 2026-01-01T00:00:00Z\n---\n\nbody\n")
+	if _, err := Parse(src); err == nil {
+		t.Error("expected Parse to error when a `verified` sequence entry doesn't decode into Actor")
+	}
+}
+
+func TestParseLegacyTimestamp(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		ok   bool
+	}{
+		{"RFC3339", "2026-06-25T09:00:00Z", true},
+		{"datetime without offset", "2026-06-25T09:00:00", true},
+		{"bare date", "2026-06-25", true},
+		{"malformed", "not-a-timestamp", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := parseLegacyTimestamp(tt.in)
+			if ok != tt.ok {
+				t.Fatalf("parseLegacyTimestamp(%q) ok = %v, want %v", tt.in, ok, tt.ok)
+			}
+			if ok && got.IsZero() {
+				t.Errorf("parseLegacyTimestamp(%q) = zero time, want a parsed value", tt.in)
+			}
+		})
+	}
+}
+
+func TestLegacyTimestampFallbackToGeneratedAt(t *testing.T) {
+	src := []byte("---\ntype: X\ntimestamp: 2026-06-25T09:00:00Z\n---\n\nbody\n")
+	c, err := Parse(src)
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if c.Generated == nil {
+		t.Fatal("expected legacy `timestamp` to populate Generated.At")
+	}
+	if c.Generated.At.Format(time.RFC3339) != "2026-06-25T09:00:00Z" {
+		t.Errorf("Generated.At = %v", c.Generated.At)
+	}
+}
+
+func TestLegacyTimestampMalformedIsIgnoredPermissively(t *testing.T) {
+	src := []byte("---\ntype: X\ntimestamp: not-a-timestamp\n---\n\nbody\n")
+	c, err := Parse(src)
+	if err != nil {
+		t.Fatalf("Parse: %v, want a malformed legacy timestamp to be tolerated rather than rejected", err)
+	}
+	if c.Generated != nil {
+		t.Errorf("Generated = %+v, want nil when the legacy timestamp can't be parsed", c.Generated)
 	}
 }
 
